@@ -13,11 +13,29 @@ public class Beacon {
     private int latOnMap;
     private int lngOnMap;
 
-    public Beacon(String macAddress, int RSSI, int lat, int lng) {
+    public Beacon(String macAddress, int RSSI, int lat, int lng, int latOnMap, int lngOnMap) {
         this.macAddress = macAddress;
         this.RSSI = RSSI;
         this.lat = lat;
         this.lng = lng;
+        this.latOnMap = latOnMap;
+        this.lngOnMap = lngOnMap;
+    }
+
+    public int getLatOnMap() {
+        return latOnMap;
+    }
+
+    public void setLatOnMap(int latOnMap) {
+        this.latOnMap = latOnMap;
+    }
+
+    public int getLngOnMap() {
+        return lngOnMap;
+    }
+
+    public void setLngOnMap(int lngOnMap) {
+        this.lngOnMap = lngOnMap;
     }
 
     public String getMacAddress() {

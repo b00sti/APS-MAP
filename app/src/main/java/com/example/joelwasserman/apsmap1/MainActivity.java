@@ -30,7 +30,6 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import io.reactivex.Observable;
@@ -41,21 +40,47 @@ import io.reactivex.functions.Consumer;
 public class MainActivity extends AppCompatActivity {
 
     private static final int MY_PERMISSIONS_REQUEST_READ_MEDIA = 10001;
+    private final static int REQUEST_ENABLE_BT = 1;
+    private static final int PERMISSION_REQUEST_COARSE_LOCATION = 1;
     android.bluetooth.BluetoothManager btManager;
     BluetoothAdapter btAdapter;
     BluetoothLeScanner btScanner;
-
+    long timeInMilliseconds = 0L;
+    int i = 50;
+    int j = 50;
+    boolean isBack = false;
     private AppCompatButton btnScanning;
     private MapView ivMap;
-
     private boolean isScanningEnabled = false;
-    private final static int REQUEST_ENABLE_BT = 1;
-    private static final int PERMISSION_REQUEST_COARSE_LOCATION = 1;
-
     private long startTime = 0L;
     private Handler customHandler = new Handler();
-    long timeInMilliseconds = 0L;
     private ArrayList<Beacon> beacons = new ArrayList<>();
+    private Runnable updateTimerThread = new Runnable() {
+        public void run() {
+            timeInMilliseconds = SystemClock.uptimeMillis() - startTime;
+            customHandler.postDelayed(this, 0);
+            if (timeInMilliseconds > 3000) ivMap.setImageResource(R.mipmap.elmap);
+        }
+    };
+    // Device scan callback.
+    private ScanCallback leScanCallback = new ScanCallback() {
+        @Override
+        public void onScanResult(int callbackType, ScanResult result) {
+            if (result.getDevice().getAddress() != null) {
+                Log.d("", "onScanResult: " + result.getDevice().getAddress());
+
+                for (Beacon beacon : beacons) {
+                    if ((result.getDevice().getAddress().equals(beacon.getMacAddress())) && (result.getRssi() > -beacon.getRSSI())) {
+
+                        //draw and approximate
+
+                        startTime = SystemClock.uptimeMillis();
+                        customHandler.postDelayed(updateTimerThread, 0);
+                    }
+                }
+            }
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -115,7 +140,7 @@ public class MainActivity extends AppCompatActivity {
             while ((line = br.readLine()) != null) {
                 String[] arr;
                 arr = line.split(",");
-                beacons.add(new Beacon(arr[0], Integer.valueOf(arr[1]), Integer.valueOf(arr[2]), Integer.valueOf(arr[3])));
+                beacons.add(prepareBeacon(arr));
                 i = i + 1;
             }
             ivMap.setBeacons(beacons);
@@ -129,9 +154,21 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    int i = 50;
-    int j = 50;
-    boolean isBack = false;
+    private Beacon prepareBeacon(String[] arr) {
+        BitmapDrawable mapImage = (BitmapDrawable) mContext.getResources().getDrawable(R.mipmap.ic_launcher);
+
+        int photoSizeHeight = mapImage;
+        int photoSizeWigth = mapImage;
+        int mapSizeHeight = ivMap.getHeight();
+        int mapSizeWidth = ivMap.getWidth();
+        int lat = Integer.valueOf(arr[2]);
+        int lng = Integer.valueOf(arr[3]);
+        new Beacon(arr[0], Integer.valueOf(arr[1]),
+                lat, lng,
+                lat * mapSizeHeight / photoSizeHeight,
+                lng * mapSizeWidth / photoSizeWigth,
+                )
+    }
 
     private void initBle() {
         Observable
@@ -182,27 +219,6 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
-
-
-    // Device scan callback.
-    private ScanCallback leScanCallback = new ScanCallback() {
-        @Override
-        public void onScanResult(int callbackType, ScanResult result) {
-            if (result.getDevice().getAddress() != null) {
-                Log.d("", "onScanResult: " + result.getDevice().getAddress());
-
-                for (Beacon beacon : beacons) {
-                    if ((result.getDevice().getAddress().equals(beacon.getMacAddress())) && (result.getRssi() > -beacon.getRSSI())) {
-
-                        //draw and approximate
-
-                        startTime = SystemClock.uptimeMillis();
-                        customHandler.postDelayed(updateTimerThread, 0);
-                    }
-                }
-            }
-        }
-    };
 
     private void draw(int lat, int lng) {
         ivMap.setLngLng(lat, lng);
@@ -258,15 +274,6 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
-
-    private Runnable updateTimerThread = new Runnable() {
-        public void run() {
-            timeInMilliseconds = SystemClock.uptimeMillis() - startTime;
-            customHandler.postDelayed(this, 0);
-            if (timeInMilliseconds > 3000) ivMap.setImageResource(R.mipmap.elmap);
-        }
-    };
-
 
     public void startScanning() {
         System.out.println("start scanning");

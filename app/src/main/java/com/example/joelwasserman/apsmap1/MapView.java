@@ -86,7 +86,7 @@ public class MapView extends android.support.v7.widget.AppCompatImageView {
         drawPaint.setStrokeJoin(Paint.Join.ROUND);
         drawPaint.setStrokeCap(Paint.Cap.ROUND);
         for (Beacon beacon : beacons) {
-            c.drawCircle(beacon.getLat(), beacon.getLng(), 10, drawPaint);
+            c.drawCircle(beacon.getLatOnMap(), beacon.getLngOnMap(), 10, drawPaint);
         }
         drawPaint.setColor(Color.RED);
         //c.drawCircle(lat, lng, 15, drawPaint);
