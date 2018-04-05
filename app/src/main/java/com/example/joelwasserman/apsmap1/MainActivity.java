@@ -11,21 +11,16 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
-import android.graphics.drawable.BitmapDrawable;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.SystemClock;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.AppCompatButton;
-import android.support.v7.widget.AppCompatImageView;
 import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
@@ -35,16 +30,23 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Random;
+import java.util.concurrent.TimeUnit;
+
+import io.reactivex.Observable;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.functions.Consumer;
 
 
 public class MainActivity extends AppCompatActivity {
 
+    private static final int MY_PERMISSIONS_REQUEST_READ_MEDIA = 10001;
     android.bluetooth.BluetoothManager btManager;
     BluetoothAdapter btAdapter;
     BluetoothLeScanner btScanner;
 
     private AppCompatButton btnScanning;
-    private AppCompatImageView ivMap;
+    private MapView ivMap;
 
     private boolean isScanningEnabled = false;
     private final static int REQUEST_ENABLE_BT = 1;
@@ -53,7 +55,7 @@ public class MainActivity extends AppCompatActivity {
     private long startTime = 0L;
     private Handler customHandler = new Handler();
     long timeInMilliseconds = 0L;
-    private ArrayList<Beacon> beacons;
+    private ArrayList<Beacon> beacons = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,8 +63,17 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         initViews();
-        readSDCard();
+
+        int permissionCheck = ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE);
+
+        if (permissionCheck != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, MY_PERMISSIONS_REQUEST_READ_MEDIA);
+        } else {
+            readSDCard();
+        }
+
         initBle();
+        draw(i, j);
 
     }
 
@@ -107,14 +118,43 @@ public class MainActivity extends AppCompatActivity {
                 beacons.add(new Beacon(arr[0], Integer.valueOf(arr[1]), Integer.valueOf(arr[2]), Integer.valueOf(arr[3])));
                 i = i + 1;
             }
+            ivMap.setBeacons(beacons);
+            ivMap.invalidate();
+            Toast.makeText(this, "Beacons: " + beacons.size(), Toast.LENGTH_LONG).show();
         } catch (IOException e) {
+            e.printStackTrace();
             Toast.makeText(getApplicationContext(), "Error in openning file.txt",
                     Toast.LENGTH_LONG).show();
         }
 
     }
 
+    int i = 50;
+    int j = 50;
+    boolean isBack = false;
+
     private void initBle() {
+        Observable
+                .interval(2, TimeUnit.SECONDS)
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Consumer<Long>() {
+                    @Override
+                    public void accept(Long aLong) throws Exception {
+                        draw(i, j);
+                        if (i > 500) {
+                            isBack = true;
+                        }
+                        if (isBack) {
+                            i -= 50;
+                            j -= 50;
+                        } else {
+                            i += 50;
+                            j += 50;
+                        }
+                        Log.d("", "accept: draw");
+                    }
+                });
+
         btManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
         btAdapter = btManager.getAdapter();
         btScanner = btAdapter.getBluetoothLeScanner();
@@ -164,27 +204,39 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
-    private void draw() {
-        Paint drawPaint = new Paint();
+    private void draw(int lat, int lng) {
+        ivMap.setLngLng(lat, lng);
+/*        Paint drawPaint = new Paint();
         drawPaint.setColor(Color.GREEN);
         drawPaint.setAntiAlias(true);
         drawPaint.setStrokeWidth(5);
-        drawPaint.setStyle(Paint.Style.STROKE);
+        drawPaint.setStyle(Paint.Style.FILL_AND_STROKE);
         drawPaint.setStrokeJoin(Paint.Join.ROUND);
         drawPaint.setStrokeCap(Paint.Cap.ROUND);
         Bitmap tempBitmap2 = BitmapFactory.decodeResource(getApplication().getResources(),
-                R.mipmap.elmap1);
+                R.mipmap.elmap);
         Bitmap tempBitmap = tempBitmap2.copy(Bitmap.Config.ARGB_8888, true);
         Canvas tempCanvas = new Canvas(tempBitmap);
         tempCanvas.drawBitmap(tempBitmap, 0, 0, null);
-        tempCanvas.drawCircle(50, 50, 20, drawPaint);
-        ivMap.setImageDrawable(new BitmapDrawable(getResources(), tempBitmap));
+        for (Beacon beacon : beacons) {
+            tempCanvas.drawCircle(beacon.getLat(), beacon.getLng(), 10, drawPaint);
+        }
+        drawPaint.setColor(Color.RED);
+        tempCanvas.drawCircle(lat, lng, 15, drawPaint);
+        Log.d("", "draw: " + tempCanvas.getWidth() + " / " + tempCanvas.getHeight());
+        Toast.makeText(this, "" + "draw: " + tempCanvas.getWidth() + " / " + tempCanvas.getHeight(), Toast.LENGTH_LONG).show();
+        ivMap.setImageDrawable(new BitmapDrawable(getResources(), tempBitmap));*/
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode,
                                            String permissions[], int[] grantResults) {
         switch (requestCode) {
+            case MY_PERMISSIONS_REQUEST_READ_MEDIA:
+                if ((grantResults.length > 0) && (grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
+                    readSDCard();
+                }
+                break;
             case PERMISSION_REQUEST_COARSE_LOCATION: {
                 if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     System.out.println("coarse location permission granted");
@@ -218,7 +270,6 @@ public class MainActivity extends AppCompatActivity {
 
     public void startScanning() {
         System.out.println("start scanning");
-        btnScanning.setVisibility(View.INVISIBLE);
         AsyncTask.execute(new Runnable() {
             @Override
             public void run() {
@@ -229,7 +280,6 @@ public class MainActivity extends AppCompatActivity {
 
     public void stopScanning() {
         System.out.println("stopping scanning");
-        btnScanning.setVisibility(View.VISIBLE);
         AsyncTask.execute(new Runnable() {
             @Override
             public void run() {
