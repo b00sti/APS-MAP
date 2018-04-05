@@ -10,6 +10,8 @@ public class Beacon {
     private int RSSI;
     private int lat;
     private int lng;
+    private int latOnMap;
+    private int lngOnMap;
 
     public Beacon(String macAddress, int RSSI, int lat, int lng) {
         this.macAddress = macAddress;
