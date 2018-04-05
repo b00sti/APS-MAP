@@ -166,8 +166,7 @@ public class MainActivity extends AppCompatActivity {
         new Beacon(arr[0], Integer.valueOf(arr[1]),
                 lat, lng,
                 lat * mapSizeHeight / photoSizeHeight,
-                lng * mapSizeWidth / photoSizeWigth,
-                )
+                lng * mapSizeWidth / photoSizeWigth)
     }
 
     private void initBle() {
@@ -222,26 +221,6 @@ public class MainActivity extends AppCompatActivity {
 
     private void draw(int lat, int lng) {
         ivMap.setLngLng(lat, lng);
-/*        Paint drawPaint = new Paint();
-        drawPaint.setColor(Color.GREEN);
-        drawPaint.setAntiAlias(true);
-        drawPaint.setStrokeWidth(5);
-        drawPaint.setStyle(Paint.Style.FILL_AND_STROKE);
-        drawPaint.setStrokeJoin(Paint.Join.ROUND);
-        drawPaint.setStrokeCap(Paint.Cap.ROUND);
-        Bitmap tempBitmap2 = BitmapFactory.decodeResource(getApplication().getResources(),
-                R.mipmap.elmap);
-        Bitmap tempBitmap = tempBitmap2.copy(Bitmap.Config.ARGB_8888, true);
-        Canvas tempCanvas = new Canvas(tempBitmap);
-        tempCanvas.drawBitmap(tempBitmap, 0, 0, null);
-        for (Beacon beacon : beacons) {
-            tempCanvas.drawCircle(beacon.getLat(), beacon.getLng(), 10, drawPaint);
-        }
-        drawPaint.setColor(Color.RED);
-        tempCanvas.drawCircle(lat, lng, 15, drawPaint);
-        Log.d("", "draw: " + tempCanvas.getWidth() + " / " + tempCanvas.getHeight());
-        Toast.makeText(this, "" + "draw: " + tempCanvas.getWidth() + " / " + tempCanvas.getHeight(), Toast.LENGTH_LONG).show();
-        ivMap.setImageDrawable(new BitmapDrawable(getResources(), tempBitmap));*/
     }
 
     @Override

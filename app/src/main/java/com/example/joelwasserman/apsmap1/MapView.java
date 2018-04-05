@@ -4,7 +4,6 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.drawable.BitmapDrawable;
 import android.os.Handler;
 import android.util.AttributeSet;
 
@@ -16,32 +15,25 @@ import java.util.ArrayList;
 
 public class MapView extends android.support.v7.widget.AppCompatImageView {
 
-    private ArrayList<Beacon> beacons = new ArrayList<>();
-    int lat = 111;
-    int lng = 111;
-    int oldLat = 111;
-    int oldLng = 111;
-    int tmpLat = 111;
-    int tmpLng = 111;
-
-    private Context mContext;
-    int x = -1;
-    int y = -1;
-    private int xVelocity = 10;
-    private int yVelocity = 5;
-
-    private Handler h;
-
     private final int FRAME_RATE = 30;
+    private ArrayList<Beacon> beacons = new ArrayList<>();
+    private int lat = -100;
+    private int lng = -100;
+    private int oldLat = -100;
+    private int oldLng = -100;
+    private int tmpLat = -100;
+    private int tmpLng = -100;
+    private int velocity = 2;
+    private Context mContext;
+    private Handler h;
+    private Runnable r = new Runnable() {
 
-    public void setLngLng(int newlat, int newlng) {
-        tmpLat = lat;
-        tmpLng = lng;
-        oldLat = lat;
-        oldLng = lng;
-        this.lat = newlat;
-        this.lng = newlng;
-    }
+        @Override
+        public void run() {
+            invalidate();
+        }
+
+    };
 
     public MapView(Context context) {
         super(context);
@@ -64,17 +56,14 @@ public class MapView extends android.support.v7.widget.AppCompatImageView {
         h = new Handler();
     }
 
-    private Runnable r = new Runnable() {
-
-        @Override
-
-        public void run() {
-
-            invalidate();
-
-        }
-
-    };
+    public void setLngLng(int newlat, int newlng) {
+        tmpLat = lat;
+        tmpLng = lng;
+        oldLat = lat;
+        oldLng = lng;
+        this.lat = newlat;
+        this.lng = newlng;
+    }
 
     protected void onDraw(Canvas c) {
 
@@ -89,67 +78,36 @@ public class MapView extends android.support.v7.widget.AppCompatImageView {
             c.drawCircle(beacon.getLatOnMap(), beacon.getLngOnMap(), 10, drawPaint);
         }
         drawPaint.setColor(Color.RED);
-        //c.drawCircle(lat, lng, 15, drawPaint);
 
-        BitmapDrawable ball = (BitmapDrawable) mContext.getResources().getDrawable(R.mipmap.ic_launcher);
-
-        if (x < 0 && y < 0) {
-
-            x = this.getWidth() / 2;
-
-            y = this.getHeight() / 2;
-
-        } else {
-
-            x += xVelocity;
-
-            y += yVelocity;
-
-            if ((x > this.getWidth() - ball.getBitmap().getWidth()) || (x < 0)) {
-
-                xVelocity = xVelocity * -1;
-
-            }
-
-            if ((y > this.getHeight() - ball.getBitmap().getHeight()) || (y < 0)) {
-
-                yVelocity = yVelocity * -1;
-
-            }
-
-        }
+        //BitmapDrawable ball = (BitmapDrawable) mContext.getResources().getDrawable(R.mipmap.ic_launcher);
 
         if (lat > oldLat) {
-            tmpLat += 2;
+            tmpLat += velocity;
             if (tmpLat > lat) {
                 tmpLat = lat;
             }
         } else {
-            tmpLat -= 2;
+            tmpLat -= velocity;
             if (tmpLat < lat) {
                 tmpLat = lat;
             }
-
         }
 
         if (lng > oldLng) {
-            tmpLng += 2;
+            tmpLng += velocity;
             if (tmpLng > lng) {
                 tmpLng = lng;
             }
         } else {
-            tmpLng -= 2;
+            tmpLng -= velocity;
             if (tmpLng < lng) {
                 tmpLng = lng;
             }
         }
 
         c.drawCircle(tmpLat, tmpLng, 15, drawPaint);
-
         c.drawBitmap(ball.getBitmap(), x, y, null);
-
         h.postDelayed(r, FRAME_RATE);
-
     }
 
     public void setBeacons(ArrayList<Beacon> beacons) {
